@@ -12,7 +12,7 @@ import {
   limit,
 } from 'firebase/firestore'
 import { db } from '../firebase'
-import PhoneAuth from '../components/PhoneAuth'
+import AuthOptions from '../components/AuthOptions'
 import { useAuth } from '../hooks/useAuth'
 import MapView from '../components/MapView'
 import { uploadFile } from '../utils/uploadFile'
@@ -215,7 +215,7 @@ function Driver() {
     })
 
     return () => unsubscribe()
-  }, [activeRideId])
+  }, [activeRideId, driverRef])
 
   useEffect(() => {
     if (!driverRef || !driverDoc) return
@@ -433,465 +433,364 @@ function Driver() {
   }
 
   return (
-    <div className="grid">
-      {!user && <PhoneAuth recaptchaId="recaptcha-driver" />}
+    <div className="screen">
+      {!user && <AuthOptions recaptchaId="recaptcha-driver" />}
 
       {user && (
-        <section className="card">
-          <h2 className="section-title">Panel de taxista</h2>
-          <p className="muted">Sesion activa: {user.phoneNumber}</p>
-          <button className="button outline" onClick={signOut}>
-            Cerrar sesion
-          </button>
-        </section>
-      )}
+        <>
+          <div className="map-hero">
+            <MapView
+              driverLocation={driverDoc?.ubicacion || null}
+              origin={activeRide?.origen || null}
+              destination={activeRide?.destino || null}
+            />
+            <section className="card map-overlay">
+              <h3 className="section-title">Estado del taxista</h3>
+              {!isVerified && (
+                <p className="muted">
+                  Te quedan {daysRemaining} dias para completar tu verificacion.
+                </p>
+              )}
+              {paymentBlocked && (
+                <p className="muted">
+                  Pago semanal pendiente. No puedes recibir viajes.
+                </p>
+              )}
+              {driverDoc?.weeklyFee != null && (
+                <p className="muted">
+                  Deuda semanal: ${driverDoc.weeklyFee.toFixed(2)} MXN.
+                </p>
+              )}
+              <p className="muted">
+                Estado actual:{' '}
+                <span
+                  className={`status-pill ${
+                    driverDoc?.disponible ? 'accepted' : 'pending'
+                  }`}
+                >
+                  {driverDoc?.disponible ? 'Disponible' : 'Ocupado'}
+                </span>
+              </p>
+              {activeRideId && (
+                <p className="muted">Viaje activo: {activeRideId}</p>
+              )}
+              {verificationError && <p className="muted">{verificationError}</p>}
+            </section>
+          </div>
 
-      {user && !driverDoc && (
-        <section className="card">
-          <h3 className="section-title">Completa tu perfil</h3>
-          <div className="field">
-            <label htmlFor="driver-name">Nombre</label>
-            <input
-              id="driver-name"
-              value={profileName}
-              onChange={(event) => setProfileName(event.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="driver-fullname">Nombre completo</label>
-            <input
-              id="driver-fullname"
-              value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
-            />
-          </div>
-          <p className="muted">
-            Sube tus documentos. Esto se usara para validar tu identidad.
-          </p>
-          <div className="field">
-            <label htmlFor="driver-photo">Foto de perfil</label>
-            <input
-              id="driver-photo"
-              type="file"
-              accept="image/*"
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (file) {
-                  handleUpload(file, `drivers/${user.uid}/foto.jpg`, setPhotoUrl)
-                }
-              }}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="driver-ine">INE (foto)</label>
-            <input
-              id="driver-ine"
-              type="file"
-              accept="image/*"
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (file) {
-                  handleUpload(file, `drivers/${user.uid}/ine.jpg`, setIneUrl)
-                }
-              }}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="driver-license">Licencia de manejo (foto)</label>
-            <input
-              id="driver-license"
-              type="file"
-              accept="image/*"
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (file) {
-                  handleUpload(file, `drivers/${user.uid}/licencia.jpg`, setLicenseUrl)
-                }
-              }}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="driver-car">Foto del auto</label>
-            <input
-              id="driver-car"
-              type="file"
-              accept="image/*"
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (file) {
-                  handleUpload(file, `drivers/${user.uid}/auto.jpg`, setCarPhotoUrl)
-                }
-              }}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="driver-plates">Placas</label>
-            <input
-              id="driver-plates"
-              value={plateNumber}
-              onChange={(event) => setPlateNumber(event.target.value)}
-            />
-          </div>
-          {uploadError && <p className="muted">{uploadError}</p>}
-          {uploading && <p className="muted">Subiendo archivos...</p>}
-          <p className="muted">
-            Cobro en MXN. Elige si aceptas efectivo y/o transferencia bancaria.
-          </p>
-          <div className="field">
-            <label htmlFor="cash-enabled">
-              <input
-                id="cash-enabled"
-                type="checkbox"
-                checked={cashEnabled}
-                onChange={(event) => setCashEnabled(event.target.checked)}
-              />{' '}
-              Acepto efectivo
-            </label>
-          </div>
-          <div className="field">
-            <label htmlFor="transfer-enabled">
-              <input
-                id="transfer-enabled"
-                type="checkbox"
-                checked={transferEnabled}
-                onChange={(event) => setTransferEnabled(event.target.checked)}
-              />{' '}
-              Acepto transferencia
-            </label>
-          </div>
-          {transferEnabled && (
-            <div className="field">
-              <label htmlFor="transfer-info">Datos para transferencia</label>
-              <input
-                id="transfer-info"
-                placeholder="CLABE / Banco / Titular"
-                value={transferInfo}
-                onChange={(event) => setTransferInfo(event.target.value)}
-              />
-            </div>
-          )}
-          <button
-            className="button"
-            onClick={saveProfile}
-            disabled={!profileName.trim() || !fullName.trim() || savingProfile}
-          >
-            Guardar perfil
-          </button>
-        </section>
-      )}
-
-      {user && driverDoc && (
-        <section className="card">
-          <h3 className="section-title">Formas de pago</h3>
-          <p className="muted">
-            Cobras en pesos mexicanos. Indica como prefieres cobrar.
-          </p>
-          <div className="field">
-            <label htmlFor="cash-enabled-existing">
-              <input
-                id="cash-enabled-existing"
-                type="checkbox"
-                checked={cashEnabled}
-                onChange={(event) => setCashEnabled(event.target.checked)}
-              />{' '}
-              Acepto efectivo
-            </label>
-          </div>
-          <div className="field">
-            <label htmlFor="transfer-enabled-existing">
-              <input
-                id="transfer-enabled-existing"
-                type="checkbox"
-                checked={transferEnabled}
-                onChange={(event) => setTransferEnabled(event.target.checked)}
-              />{' '}
-              Acepto transferencia
-            </label>
-          </div>
-          {transferEnabled && (
-            <div className="field">
-              <label htmlFor="transfer-info-existing">Datos para transferencia</label>
-              <input
-                id="transfer-info-existing"
-                placeholder="CLABE / Banco / Titular"
-                value={transferInfo}
-                onChange={(event) => setTransferInfo(event.target.value)}
-              />
-            </div>
-          )}
-          <button className="button" onClick={savePayments} disabled={savingPayments}>
-            Guardar formas de pago
-          </button>
-        </section>
-      )}
-
-      {user && driverDoc && (
-        <section className="card">
-          <h3 className="section-title">Documentos y vehiculo</h3>
-          <p className="muted">Actualiza tu informacion cuando sea necesario.</p>
-          <div className="field">
-            <label htmlFor="driver-fullname-edit">Nombre completo</label>
-            <input
-              id="driver-fullname-edit"
-              value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="driver-photo-edit">Foto de perfil</label>
-            <input
-              id="driver-photo-edit"
-              type="file"
-              accept="image/*"
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (file) {
-                  handleUpload(file, `drivers/${user.uid}/foto.jpg`, setPhotoUrl)
-                }
-              }}
-            />
-            {photoUrl && <p className="muted">Foto guardada.</p>}
-          </div>
-          <div className="field">
-            <label htmlFor="driver-ine-edit">INE (foto)</label>
-            <input
-              id="driver-ine-edit"
-              type="file"
-              accept="image/*"
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (file) {
-                  handleUpload(file, `drivers/${user.uid}/ine.jpg`, setIneUrl)
-                }
-              }}
-            />
-            {ineUrl && <p className="muted">INE guardada.</p>}
-          </div>
-          <div className="field">
-            <label htmlFor="driver-license-edit">Licencia de manejo (foto)</label>
-            <input
-              id="driver-license-edit"
-              type="file"
-              accept="image/*"
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (file) {
-                  handleUpload(file, `drivers/${user.uid}/licencia.jpg`, setLicenseUrl)
-                }
-              }}
-            />
-            {licenseUrl && <p className="muted">Licencia guardada.</p>}
-          </div>
-          <div className="field">
-            <label htmlFor="driver-car-edit">Foto del auto</label>
-            <input
-              id="driver-car-edit"
-              type="file"
-              accept="image/*"
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (file) {
-                  handleUpload(file, `drivers/${user.uid}/auto.jpg`, setCarPhotoUrl)
-                }
-              }}
-            />
-            {carPhotoUrl && <p className="muted">Foto del auto guardada.</p>}
-          </div>
-          <div className="field">
-            <label htmlFor="driver-plates-edit">Placas</label>
-            <input
-              id="driver-plates-edit"
-              value={plateNumber}
-              onChange={(event) => setPlateNumber(event.target.value)}
-            />
-          </div>
-          {uploadError && <p className="muted">{uploadError}</p>}
-          {uploading && <p className="muted">Subiendo archivos...</p>}
-          <button
-            className="button"
-            onClick={saveProfile}
-            disabled={!profileName.trim() || !fullName.trim() || savingProfile}
-          >
-            Guardar datos
-          </button>
-        </section>
-      )}
-
-      {user && driverDoc && (
-        <section className="card">
-          <h3 className="section-title">Disponibilidad</h3>
-          {!isVerified && (
-            <p className="muted">
-              Te quedan {daysRemaining} dias para completar tu verificacion.
-              Despues se bloquearan los viajes.
-            </p>
-          )}
-          {paymentBlocked && (
-            <p className="muted">
-              Pago semanal pendiente. No puedes recibir viajes hasta completar el
-              pago.
-            </p>
-          )}
-          {driverDoc?.weeklyFee != null && (
-            <p className="muted">
-              Deuda semanal: ${driverDoc.weeklyFee.toFixed(2)} MXN (generado $
-              {driverDoc.weeklyTotal?.toFixed(2) || '0.00'} MXN).
-            </p>
-          )}
-          {verificationError && <p className="muted">{verificationError}</p>}
-          <p className="muted">
-            Estado actual:{' '}
-            <span
-              className={`status-pill ${
-                driverDoc.disponible ? 'accepted' : 'pending'
-              }`}
-            >
-              {driverDoc.disponible ? 'Disponible' : 'Ocupado'}
-            </span>
-          </p>
-          <button className="button" onClick={toggleAvailability}>
-            {driverDoc.disponible ? 'Marcar ocupado' : 'Marcar disponible'}
-          </button>
-          {locationError && <p className="muted">{locationError}</p>}
-          <div className="field" style={{ marginTop: '1rem' }}>
-            <label htmlFor="radius-km">Radio de busqueda (km)</label>
-            <input
-              id="radius-km"
-              type="number"
-              min="1"
-              max="50"
-              value={radiusKm}
-              onChange={(event) => setRadiusKm(Number(event.target.value))}
-              onBlur={() => {
-                if (driverRef) {
-                  updateDoc(driverRef, {
-                    radioKm: radiusKm,
-                    ultimoActivo: serverTimestamp(),
-                  })
-                }
-              }}
-            />
-          </div>
-        </section>
-      )}
-
-      {user && driverDoc?.ubicacion && (
-        <section className="card">
-          <h3 className="section-title">Tu ubicacion</h3>
-          <MapView
-            driverLocation={driverDoc.ubicacion}
-            origin={activeRide?.origen || null}
-            destination={activeRide?.destino || null}
-          />
-          {activeRide?.origen && (
-            <p className="muted" style={{ marginTop: '0.8rem' }}>
-              Origen del pasajero: {activeRide.origen.latitude.toFixed(5)},{' '}
-              {activeRide.origen.longitude.toFixed(5)}
-            </p>
-          )}
-          {activeRide?.destino && (
-            <p className="muted" style={{ marginTop: '0.4rem' }}>
-              Destino: {activeRide.destino.latitude.toFixed(5)},{' '}
-              {activeRide.destino.longitude.toFixed(5)}
-            </p>
-          )}
-          {activeRide?.destinoTexto && (
-            <p className="muted" style={{ marginTop: '0.4rem' }}>
-              Destino (texto): {activeRide.destinoTexto}
-            </p>
-          )}
-        </section>
-      )}
-
-      {user && scheduledRides.length > 0 && (
-        <section className="card">
-          <h3 className="section-title">Viajes agendados</h3>
-          <div className="list">
-            {scheduledRides.map((ride) => (
-              <div className="list-item" key={ride.id}>
-                <p className="muted">Solicitud: {ride.id}</p>
-                {ride.scheduledAt && (
-                  <p className="muted">
-                    Fecha: {ride.scheduledAt.toDate().toLocaleString('es-MX')}
-                  </p>
-                )}
-                {ride.destinoTexto && (
-                  <p className="muted">Destino: {ride.destinoTexto}</p>
-                )}
+          {user && !driverDoc && (
+            <section className="card panel">
+              <h3 className="section-title">Completa tu perfil</h3>
+              <div className="field">
+                <label htmlFor="driver-name">Nombre</label>
+                <input
+                  id="driver-name"
+                  value={profileName}
+                  onChange={(event) => setProfileName(event.target.value)}
+                />
               </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {user && driverDoc?.disponible && (
-        <section className="card">
-          <h3 className="section-title">Solicitudes pendientes</h3>
-          {filteredPendingRides.length === 0 && (
-            <p className="muted">No hay viajes nuevos.</p>
+              <div className="field">
+                <label htmlFor="driver-fullname">Nombre completo</label>
+                <input
+                  id="driver-fullname"
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                />
+              </div>
+              <p className="muted">
+                Sube tus documentos. Esto se usara para validar tu identidad.
+              </p>
+              <div className="field">
+                <label htmlFor="driver-photo">Foto de perfil</label>
+                <input
+                  id="driver-photo"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) {
+                      handleUpload(file, `drivers/${user.uid}/foto.jpg`, setPhotoUrl)
+                    }
+                  }}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="driver-ine">INE (foto)</label>
+                <input
+                  id="driver-ine"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) {
+                      handleUpload(file, `drivers/${user.uid}/ine.jpg`, setIneUrl)
+                    }
+                  }}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="driver-license">Licencia de manejo (foto)</label>
+                <input
+                  id="driver-license"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) {
+                      handleUpload(file, `drivers/${user.uid}/licencia.jpg`, setLicenseUrl)
+                    }
+                  }}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="driver-car">Foto del auto</label>
+                <input
+                  id="driver-car"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) {
+                      handleUpload(file, `drivers/${user.uid}/auto.jpg`, setCarPhotoUrl)
+                    }
+                  }}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="driver-plates">Placas</label>
+                <input
+                  id="driver-plates"
+                  value={plateNumber}
+                  onChange={(event) => setPlateNumber(event.target.value)}
+                />
+              </div>
+              {uploadError && <p className="muted">{uploadError}</p>}
+              {uploading && <p className="muted">Subiendo archivos...</p>}
+              <p className="muted">
+                Cobro en MXN. Elige si aceptas efectivo y/o transferencia bancaria.
+              </p>
+              <div className="field">
+                <label htmlFor="cash-enabled">
+                  <input
+                    id="cash-enabled"
+                    type="checkbox"
+                    checked={cashEnabled}
+                    onChange={(event) => setCashEnabled(event.target.checked)}
+                  />{' '}
+                  Acepto efectivo
+                </label>
+              </div>
+              <div className="field">
+                <label htmlFor="transfer-enabled">
+                  <input
+                    id="transfer-enabled"
+                    type="checkbox"
+                    checked={transferEnabled}
+                    onChange={(event) => setTransferEnabled(event.target.checked)}
+                  />{' '}
+                  Acepto transferencia
+                </label>
+              </div>
+              {transferEnabled && (
+                <div className="field">
+                  <label htmlFor="transfer-info">Datos para transferencia</label>
+                  <input
+                    id="transfer-info"
+                    placeholder="CLABE / Banco / Titular"
+                    value={transferInfo}
+                    onChange={(event) => setTransferInfo(event.target.value)}
+                  />
+                </div>
+              )}
+              <button
+                className="button"
+                onClick={saveProfile}
+                disabled={!profileName.trim() || !fullName.trim() || savingProfile}
+              >
+                Guardar perfil
+              </button>
+            </section>
           )}
-          <div className="list">
-            {filteredPendingRides.map((ride) => (
-              <div className="list-item" key={ride.id}>
-                <p className="muted">Solicitud: {ride.id}</p>
-                {ride.scheduledAt && (
-                  <p className="muted">
-                    Programado para:{' '}
-                    {ride.scheduledAt.toDate().toLocaleString('es-MX')}
-                  </p>
-                )}
-                {ride.destinoTexto && (
-                  <p className="muted">Destino: {ride.destinoTexto}</p>
-                )}
-                <button className="button secondary" onClick={() => acceptRide(ride.id)}>
-                  Aceptar
+
+          {user && driverDoc && (
+            <section className="card panel">
+              <h3 className="section-title">Disponibilidad</h3>
+              <button className="button" onClick={toggleAvailability}>
+                {driverDoc.disponible ? 'Marcar ocupado' : 'Marcar disponible'}
+              </button>
+              {locationError && <p className="muted">{locationError}</p>}
+              <div className="field">
+                <label htmlFor="radius-km">Radio de busqueda (km)</label>
+                <input
+                  id="radius-km"
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={radiusKm}
+                  onChange={(event) => setRadiusKm(Number(event.target.value))}
+                  onBlur={() => {
+                    if (driverRef) {
+                      updateDoc(driverRef, {
+                        radioKm: radiusKm,
+                        ultimoActivo: serverTimestamp(),
+                      })
+                    }
+                  }}
+                />
+              </div>
+            </section>
+          )}
+
+          {user && driverDoc?.disponible && (
+            <section className="card panel">
+              <h3 className="section-title">Solicitudes pendientes</h3>
+              {filteredPendingRides.length === 0 && (
+                <p className="muted">No hay viajes nuevos.</p>
+              )}
+              <div className="list">
+                {filteredPendingRides.map((ride) => (
+                  <div className="list-item" key={ride.id}>
+                    <p className="muted">Solicitud: {ride.id}</p>
+                    {ride.scheduledAt && (
+                      <p className="muted">
+                        Programado para:{' '}
+                        {ride.scheduledAt.toDate().toLocaleString('es-MX')}
+                      </p>
+                    )}
+                    {ride.destinoTexto && (
+                      <p className="muted">Destino: {ride.destinoTexto}</p>
+                    )}
+                    <button
+                      className="button secondary"
+                      onClick={() => acceptRide(ride.id)}
+                    >
+                      Aceptar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {user && scheduledRides.length > 0 && (
+            <section className="card panel">
+              <h3 className="section-title">Viajes agendados</h3>
+              <div className="list">
+                {scheduledRides.map((ride) => (
+                  <div className="list-item" key={ride.id}>
+                    <p className="muted">Solicitud: {ride.id}</p>
+                    {ride.scheduledAt && (
+                      <p className="muted">
+                        Fecha: {ride.scheduledAt.toDate().toLocaleString('es-MX')}
+                      </p>
+                    )}
+                    {ride.destinoTexto && (
+                      <p className="muted">Destino: {ride.destinoTexto}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {user && canceledRideId && (
+            <section className="card panel">
+              <h3 className="section-title">Viaje cancelado</h3>
+              <p className="muted">La solicitud {canceledRideId} fue cancelada.</p>
+              <button className="button outline" onClick={() => setCanceledRideId('')}>
+                Entendido
+              </button>
+            </section>
+          )}
+
+          {user && activeRideId && (
+            <section className="card panel">
+              <h3 className="section-title">Viaje en curso</h3>
+              <p className="muted">ID del viaje: {activeRideId}</p>
+              <div className="field">
+                <label htmlFor="fare-amount">Monto final (MXN)</label>
+                <input
+                  id="fare-amount"
+                  type="number"
+                  min="1"
+                  value={fareAmount}
+                  onChange={(event) => setFareAmount(event.target.value)}
+                />
+              </div>
+              {fareError && <p className="muted">{fareError}</p>}
+              <div className="cta-row">
+                <button
+                  className="button secondary"
+                  onClick={() => updateRideStatus(activeRideId, 'en curso')}
+                >
+                  Iniciar viaje
+                </button>
+                <button
+                  className="button outline"
+                  onClick={() => updateRideStatus(activeRideId, 'finalizado')}
+                >
+                  Finalizar viaje
                 </button>
               </div>
-            ))}
-          </div>
-        </section>
-      )}
+            </section>
+          )}
 
-      {user && canceledRideId && (
-        <section className="card">
-          <h3 className="section-title">Viaje cancelado</h3>
-          <p className="muted">La solicitud {canceledRideId} fue cancelada.</p>
-          <button className="button outline" onClick={() => setCanceledRideId('')}>
-            Entendido
-          </button>
-        </section>
-      )}
-
-      {user && activeRideId && (
-        <section className="card">
-          <h3 className="section-title">Viaje en curso</h3>
-          <p className="muted">ID del viaje: {activeRideId}</p>
-          <div className="field">
-            <label htmlFor="fare-amount">Monto final (MXN)</label>
-            <input
-              id="fare-amount"
-              type="number"
-              min="1"
-              value={fareAmount}
-              onChange={(event) => setFareAmount(event.target.value)}
-            />
-          </div>
-          {fareError && <p className="muted">{fareError}</p>}
-          <div className="cta-row">
-            <button
-              className="button secondary"
-              onClick={() => updateRideStatus(activeRideId, 'en curso')}
-            >
-              Iniciar viaje
-            </button>
-            <button
-              className="button outline"
-              onClick={() => updateRideStatus(activeRideId, 'finalizado')}
-            >
-              Finalizar viaje
-            </button>
-          </div>
-        </section>
+          {user && driverDoc && (
+            <section className="card panel">
+              <h3 className="section-title">Cuenta y pagos</h3>
+              <p className="muted">Sesion activa: {user.phoneNumber || user.email}</p>
+              <div className="field">
+                <label htmlFor="cash-enabled-existing">
+                  <input
+                    id="cash-enabled-existing"
+                    type="checkbox"
+                    checked={cashEnabled}
+                    onChange={(event) => setCashEnabled(event.target.checked)}
+                  />{' '}
+                  Acepto efectivo
+                </label>
+              </div>
+              <div className="field">
+                <label htmlFor="transfer-enabled-existing">
+                  <input
+                    id="transfer-enabled-existing"
+                    type="checkbox"
+                    checked={transferEnabled}
+                    onChange={(event) => setTransferEnabled(event.target.checked)}
+                  />{' '}
+                  Acepto transferencia
+                </label>
+              </div>
+              {transferEnabled && (
+                <div className="field">
+                  <label htmlFor="transfer-info-existing">Datos para transferencia</label>
+                  <input
+                    id="transfer-info-existing"
+                    placeholder="CLABE / Banco / Titular"
+                    value={transferInfo}
+                    onChange={(event) => setTransferInfo(event.target.value)}
+                  />
+                </div>
+              )}
+              <div className="cta-row">
+                <button
+                  className="button"
+                  onClick={savePayments}
+                  disabled={savingPayments}
+                >
+                  Guardar pagos
+                </button>
+                <button className="button outline" onClick={signOut}>
+                  Cerrar sesion
+                </button>
+              </div>
+            </section>
+          )}
+        </>
       )}
     </div>
   )

@@ -1,22 +1,26 @@
-import { Link, Route, Routes } from 'react-router-dom'
+import { Link, Route, Routes, useLocation } from 'react-router-dom'
 import './App.css'
 import Admin from './pages/Admin.jsx'
 import Driver from './pages/Driver.jsx'
 import Passenger from './pages/Passenger.jsx'
+import { useAuth } from './hooks/useAuth'
+import { useAdmin } from './hooks/useAdmin'
 
 function App() {
+  const { user } = useAuth()
+  const { isAdmin } = useAdmin(user)
+  const location = useLocation()
+
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <div>
-          <p className="app-title">Taxi Local</p>
-          <p className="app-subtitle">Solicita o acepta viajes en tiempo real</p>
+      <header className="top-bar">
+        <div className="brand">
+          <span className="brand-dot" />
+          <div>
+            <p className="app-title">Taxi Local</p>
+            <p className="app-subtitle">Solicita o acepta viajes en tiempo real</p>
+          </div>
         </div>
-        <nav className="app-nav">
-          <Link to="/pasajero">Pasajero</Link>
-          <Link to="/taxista">Taxista</Link>
-          <Link to="/admin">Admin</Link>
-        </nav>
       </header>
 
       <main className="app-main">
@@ -24,7 +28,7 @@ function App() {
           <Route
             path="/"
             element={
-              <section className="card">
+              <section className="card hero-card">
                 <h1>Bienvenido</h1>
                 <p>
                   Elige tu rol para empezar. La app usa Firebase Auth y Firestore
@@ -46,6 +50,29 @@ function App() {
           <Route path="/admin" element={<Admin />} />
         </Routes>
       </main>
+
+      <nav className="bottom-nav">
+        <Link
+          className={location.pathname === '/pasajero' ? 'active' : ''}
+          to="/pasajero"
+        >
+          Pasajero
+        </Link>
+        <Link
+          className={location.pathname === '/taxista' ? 'active' : ''}
+          to="/taxista"
+        >
+          Taxista
+        </Link>
+        {isAdmin && (
+          <Link
+            className={location.pathname === '/admin' ? 'active' : ''}
+            to="/admin"
+          >
+            Admin
+          </Link>
+        )}
+      </nav>
     </div>
   )
 }

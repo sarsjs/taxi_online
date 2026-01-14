@@ -10,7 +10,7 @@ import {
 import { db } from '../firebase'
 import { useAuth } from '../hooks/useAuth'
 import { useAdmin } from '../hooks/useAdmin'
-import PhoneAuth from '../components/PhoneAuth'
+import EmailAuth from '../components/EmailAuth'
 
 const DEFAULT_TARIFFS = {
   baseFare: 0,
@@ -201,7 +201,7 @@ function Admin() {
   }
 
   if (!user) {
-    return <PhoneAuth recaptchaId="recaptcha-admin" />
+    return <EmailAuth />
   }
 
   if (!isAdmin) {

@@ -56,7 +56,7 @@ function PhoneAuth({ recaptchaId }) {
   }
 
   return (
-    <div className="card">
+    <div className="card auth-card">
       <h2 className="section-title">Inicio de sesion por SMS</h2>
       <div className="field">
         <label htmlFor={`${recaptchaId}-phone`}>Telefono</label>
