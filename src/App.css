@@ -1,0 +1,184 @@
+.app-shell {
+  min-height: 100vh;
+  background: linear-gradient(140deg, #fff5e6, #f6f1ff 45%, #e6f7ff);
+  color: #1f2430;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem 0.5rem;
+}
+
+.app-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.app-subtitle {
+  margin: 0.3rem 0 0;
+  color: #4a4f5a;
+  font-size: 0.95rem;
+}
+
+.app-nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.app-nav a {
+  text-decoration: none;
+  color: #2f3a4a;
+  font-weight: 600;
+}
+
+.app-main {
+  padding: 1.5rem 2rem 3rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 1.5rem;
+  box-shadow: 0 20px 45px rgba(17, 25, 40, 0.08);
+}
+
+.card + .card {
+  margin-top: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.2rem;
+  margin: 0 0 1rem;
+}
+
+.cta-row {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.2rem;
+  flex-wrap: wrap;
+}
+
+.button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.7rem 1.4rem;
+  background: #ff7a4c;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.button.outline {
+  background: transparent;
+  border: 2px solid #ff7a4c;
+  color: #ff7a4c;
+}
+
+.button.secondary {
+  background: #1f3b7a;
+}
+
+.grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.8rem;
+}
+
+.field input {
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid #d2d7e1;
+  font-size: 0.95rem;
+}
+
+.field select {
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid #d2d7e1;
+  font-size: 0.95rem;
+  background: #fff;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  background: #edf2ff;
+  color: #32427a;
+}
+
+.status-pill.pending {
+  background: #fff4e6;
+  color: #9a4b2b;
+}
+
+.status-pill.accepted {
+  background: #e6ffed;
+  color: #1f6b3b;
+}
+
+.list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.list-item {
+  border: 1px solid #e2e6ef;
+  border-radius: 14px;
+  padding: 0.9rem;
+  background: #fafbff;
+}
+
+.map-shell {
+  height: 280px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #e2e6ef;
+}
+
+.map-shell .leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+
+.muted {
+  color: #5a6070;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 720px) {
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.8rem;
+    padding: 1.2rem 1.4rem 0.4rem;
+  }
+
+  .app-main {
+    padding: 1.2rem 1.4rem 2.5rem;
+  }
+}

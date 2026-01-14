@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    function driverAllowed() {
+      let driver = get(/databases/$(database)/documents/drivers/$(request.auth.uid));
+      let verifiedOk = driver.data.verificado == true
+        || (driver.data.createdAt != null
+          && request.time < driver.data.createdAt + duration.value(3, 'd'));
+      let paymentOk = driver.data.bloqueadoPorPago != true;
+      return verifiedOk && paymentOk;
+    }
+
+    match /drivers/{driverId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && request.auth.uid == driverId;
+    }
+
+    match /passengers/{passengerId} {
+      allow read: if request.auth != null && request.auth.uid == passengerId;
+      allow create, update: if request.auth != null && request.auth.uid == passengerId;
+    }
+
+    match /settings/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    match /zones/{zoneId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    match /rides/{rideId} {
+      allow read, create: if request.auth != null;
+      allow update: if request.auth != null
+        && (
+          resource.data.pasajeroUid == request.auth.uid
+          || request.resource.data.pasajeroUid == request.auth.uid
+          || (
+            (resource.data.driverUid == request.auth.uid
+              || request.resource.data.driverUid == request.auth.uid)
+            && driverAllowed()
+          )
+        );
+    }
+  }
+}
