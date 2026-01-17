@@ -1,6 +1,7 @@
 {
   "projects": {
-    "default": "taxi-online-52593"
+    "default": "taxi-online-52593",
+    "firebase deploy --only functions": "taxi-online-52593"
   },
   "targets": {},
   "etags": {}
