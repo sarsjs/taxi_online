@@ -23,6 +23,20 @@ export const notifyDriversOnNewRide = onDocumentCreated(
     if (!ride) return
     if (ride.estado !== 'pendiente') return
 
+    // Obtener información de la ruta si existe
+    let routeInfo = '';
+    if (ride.routeId) {
+      try {
+        const routeDoc = await db.collection('routes').doc(ride.routeId).get();
+        if (routeDoc.exists) {
+          const routeData = routeDoc.data();
+          routeInfo = ` (ruta: ${routeData.name})`;
+        }
+      } catch (error) {
+        console.log('Error obteniendo información de ruta:', error);
+      }
+    }
+
     const driversSnapshot = await db
       .collection('drivers')
       .where('disponible', '==', true)
@@ -32,7 +46,7 @@ export const notifyDriversOnNewRide = onDocumentCreated(
     await sendToTokens(tokens, {
       notification: {
         title: 'Nuevo viaje disponible',
-        body: 'Hay una solicitud pendiente cerca de ti.',
+        body: `Hay una solicitud pendiente cerca de ti.${routeInfo}`,
       },
       data: {
         rideId: event.params.rideId,

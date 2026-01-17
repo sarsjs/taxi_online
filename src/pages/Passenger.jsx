@@ -14,8 +14,11 @@ import { db } from '../firebase'
 import { useAuth } from '../hooks/useAuth'
 import AuthOptions from '../components/AuthOptions'
 import MapView from '../components/MapView'
+import RouteSelector from '../components/RouteSelector'
+import LandmarkSelector from '../components/LandmarkSelector'
 import { uploadFile } from '../utils/uploadFile'
 import { listenForegroundMessages, registerFcmToken } from '../utils/notifications'
+import { getLocationWithFallback, storeLocation } from '../utils/ruralUtils'
 
 function Passenger() {
   const { user, initializing, signOut } = useAuth()
@@ -110,7 +113,7 @@ function Passenger() {
     }
   }, [])
 
-  const requestRide = () => {
+  const requestRide = async () => {
     if (!user) return
     setLocationError('')
     setScheduleError('')
@@ -167,19 +170,18 @@ function Passenger() {
       return
     }
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const origin = new GeoPoint(
-          position.coords.latitude,
-          position.coords.longitude,
-        )
-        await createRide(origin)
-      },
-      () => {
-        setLocationError('No se pudo obtener tu ubicacion.')
-      },
-      { enableHighAccuracy: true, timeout: 10000 },
-    )
+    try {
+      const position = await getLocationWithFallback({ enableHighAccuracy: true, timeout: 15000 });
+      storeLocation(position); // Almacenar para uso futuro
+
+      const origin = new GeoPoint(
+        position.latitude,
+        position.longitude,
+      )
+      await createRide(origin)
+    } catch (error) {
+      setLocationError('No se pudo obtener tu ubicacion. Verifica tu conexion.');
+    }
   }
 
   const handleUpload = async (file) => {
@@ -474,6 +476,27 @@ function Passenger() {
                 {scheduleError && <p className="muted">{scheduleError}</p>}
               </>
             )}
+            <RouteSelector
+              onSelectRoute={(route) => {
+                if (route.origin) {
+                  setOriginLat(route.origin.latitude.toString());
+                  setOriginLng(route.origin.longitude.toString());
+                }
+                if (route.destination) {
+                  setDestLat(route.destination.latitude.toString());
+                  setDestLng(route.destination.longitude.toString());
+                  setDestAddress(route.destinationText || '');
+                }
+              }}
+            />
+            <LandmarkSelector
+              onSelectLandmark={(landmark) => {
+                setDestLat(landmark.location.latitude.toString());
+                setDestLng(landmark.location.longitude.toString());
+                setDestAddress(landmark.name + ' - ' + landmark.description);
+              }}
+              type="destination"
+            />
             <div className="field">
               <label htmlFor="dest-search">Buscar destino</label>
               <input

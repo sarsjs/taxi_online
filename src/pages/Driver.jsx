@@ -15,8 +15,11 @@ import { db } from '../firebase'
 import AuthOptions from '../components/AuthOptions'
 import { useAuth } from '../hooks/useAuth'
 import MapView from '../components/MapView'
+import RouteSelector from '../components/RouteSelector'
+import LandmarkSelector from '../components/LandmarkSelector'
 import { uploadFile } from '../utils/uploadFile'
 import { listenForegroundMessages, registerFcmToken } from '../utils/notifications'
+import { getLocationWithFallback, storeLocation } from '../utils/ruralUtils'
 
 function Driver() {
   const { user, initializing, signOut } = useAuth()
@@ -224,25 +227,24 @@ function Driver() {
 
     let intervalId = null
 
-    const updateLocation = () => {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          setLocationError('')
-          const location = new GeoPoint(
-            position.coords.latitude,
-            position.coords.longitude,
-          )
-          await updateDoc(driverRef, {
-            ubicacion: location,
-            ultimoActivo: serverTimestamp(),
-          })
-        },
-        () => {
-          setLocationError('No se pudo acceder a la ubicacion.')
-        },
-        { enableHighAccuracy: true, timeout: 10000 },
-      )
-    }
+    const updateLocation = async () => {
+      try {
+        const position = await getLocationWithFallback({ enableHighAccuracy: true, timeout: 15000 });
+        storeLocation(position); // Almacenar para uso futuro
+
+        setLocationError('');
+        const location = new GeoPoint(
+          position.latitude,
+          position.longitude,
+        );
+        await updateDoc(driverRef, {
+          ubicacion: location,
+          ultimoActivo: serverTimestamp(),
+        });
+      } catch (error) {
+        setLocationError('No se pudo acceder a la ubicación. Verifica tu conexión.');
+      }
+    };
 
     updateLocation()
     intervalId = setInterval(updateLocation, 12000)
@@ -639,6 +641,15 @@ function Driver() {
                         ultimoActivo: serverTimestamp(),
                       })
                     }
+                  }}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="preferred-routes">Rutas preferidas</label>
+                <RouteSelector
+                  onSelectRoute={(route) => {
+                    // Aquí podrías guardar la ruta preferida del conductor
+                    console.log("Ruta preferida seleccionada:", route);
                   }}
                 />
               </div>
