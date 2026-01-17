@@ -197,3 +197,45 @@ export const weeklyBilling = onSchedule(
     }
   },
 )
+
+// Función para calcular tarifas basadas en rutas predefinidas
+export const calculateRouteFare = onDocumentCreated(
+  'tempFareCalculations/{calcId}',
+  async (event) => {
+    const calculation = event.data?.data()
+    if (!calculation || !calculation.routeId) return
+
+    try {
+      // Obtener la ruta predefinida
+      const routeDoc = await db.collection('routes').doc(calculation.routeId).get()
+      if (!routeDoc.exists) return
+
+      const routeData = routeDoc.data()
+      const fixedPrice = routeData.fixedPrice
+
+      // Actualizar el documento con el precio calculado
+      await event.data.ref.update({
+        calculatedFare: fixedPrice,
+        calculatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        routeName: routeData.name
+      })
+    } catch (error) {
+      console.error('Error calculating route fare:', error)
+    }
+  }
+)
+
+// Función para actualizar automáticamente la información de landmarks
+export const updateLandmarkStats = onDocumentUpdated(
+  'landmarks/{landmarkId}',
+  async (event) => {
+    const after = event.data?.after?.data()
+    if (!after) return
+
+    // Actualizar contador de uso del landmark
+    await event.data.after.ref.update({
+      lastUsed: admin.firestore.FieldValue.serverTimestamp(),
+      usageCount: admin.firestore.FieldValue.increment(1)
+    })
+  }
+)
