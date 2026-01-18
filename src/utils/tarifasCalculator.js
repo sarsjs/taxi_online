@@ -1,10 +1,8 @@
 /**
- * Calcula la tarifa estimada para un viaje
- * @param {number} distanciaKm - Distancia del viaje en kilómetros
- * @param {number} duracionMin - Duración estimada del viaje en minutos
- * @returns {object} Objeto con tarifas estimadas
+ * Calculadora de tarifas
  */
-export function calcularTarifa(distanciaKm, duracionMin) {
+
+export const calcularTarifa = (distanciaKm, duracionMin) => {
   const tarifaBase = 30; // pesos mexicanos
   const costoPorKm = 8;
   const costoPorMinuto = 2;
@@ -14,4 +12,4 @@ export function calcularTarifa(distanciaKm, duracionMin) {
     estimadoMax: Math.ceil(total * 1.1),
     exacto: total
   };
-}
+};
