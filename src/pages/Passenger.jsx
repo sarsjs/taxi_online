@@ -16,7 +16,9 @@ import AuthOptions from '../components/AuthOptions'
 import MapView from '../components/MapView'
 import RouteSelector from '../components/RouteSelector'
 import LandmarkSelector from '../components/LandmarkSelector'
+import TarifaEstimada from '../components/TarifaEstimada'
 import { uploadFile } from '../utils/uploadFile'
+import { calcularTarifa } from '../utils/tarifasCalculator'
 import { listenForegroundMessages, registerFcmToken } from '../utils/notifications'
 import { getLocationWithFallback, storeLocation } from '../utils/ruralUtils'
 
@@ -34,6 +36,8 @@ function Passenger() {
   const [destLat, setDestLat] = useState('')
   const [destLng, setDestLng] = useState('')
   const [destAddress, setDestAddress] = useState('')
+  const [distanciaRuta, setDistanciaRuta] = useState(null)
+  const [duracionRuta, setDuracionRuta] = useState(null)
   const [originLat, setOriginLat] = useState('')
   const [originLng, setOriginLng] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
@@ -488,8 +492,21 @@ function Passenger() {
                   setDestLng(route.destination.longitude.toString());
                   setDestAddress(route.destinationText || '');
                 }
+                // Capturar distancia y duración si están disponibles en la ruta
+                if (route.distancia) {
+                  setDistanciaRuta(route.distancia);
+                }
+                if (route.duracion) {
+                  setDuracionRuta(route.duracion);
+                }
               }}
             />
+            {distanciaRuta && duracionRuta && (
+              <TarifaEstimada
+                distanciaKm={distanciaRuta}
+                duracionMin={duracionRuta}
+              />
+            )}
             <LandmarkSelector
               onSelectLandmark={(landmark) => {
                 setDestLat(landmark.location.latitude.toString());
@@ -547,7 +564,13 @@ function Passenger() {
               onClick={requestRide}
               disabled={!canRequestRide || (isScheduled && !scheduledAt)}
             >
-              Pedir taxi
+              {distanciaRuta && duracionRuta ? (
+                <>
+                  Pedir taxi • ${calcularTarifa(distanciaRuta, duracionRuta).estimadoMin}-${calcularTarifa(distanciaRuta, duracionRuta).estimadoMax}
+                </>
+              ) : (
+                'Pedir taxi'
+              )}
             </button>
             {locationError && <p className="muted">{locationError}</p>}
           </section>
