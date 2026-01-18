@@ -239,3 +239,202 @@ export const updateLandmarkStats = onDocumentUpdated(
     })
   }
 )
+
+// Función para notificar al pasajero cuando se acepta un viaje
+export const onTripAccepted = onDocumentUpdated(
+  'rides/{rideId}',
+  async (event) => {
+    const before = event.data?.before?.data()
+    const after = event.data?.after?.data()
+
+    if (!before || !after) return
+    // Solo procesar si el estado cambió a 'aceptado'
+    if (before.estado !== 'pendiente' || after.estado !== 'aceptado') return
+    if (!after.pasajeroUid) return
+
+    // Obtener información del conductor
+    const driverRef = db.collection('drivers').doc(after.driverUid)
+    const driverSnap = await driverRef.get()
+    const driverData = driverSnap.data()
+
+    // Obtener tokens FCM del pasajero
+    const passengerRef = db.collection('passengers').doc(after.pasajeroUid)
+    const passengerSnap = await passengerRef.get()
+    const tokens = passengerSnap.data()?.fcmTokens || []
+
+    if (tokens.length === 0) return
+
+    // Calcular tiempo estimado si es posible
+    let etaMessage = 'está en camino';
+    if (after.taxistaUbicacion && after.origen) {
+      // Calcular distancia y tiempo estimado (simplificado)
+      const distancia = calculateDistance(
+        after.taxistaUbicacion.latitude,
+        after.taxistaUbicacion.longitude,
+        after.origen.latitude,
+        after.origen.longitude
+      );
+      const tiempoEstimado = Math.round(distancia / 30 * 60); // Suponiendo 30 km/h
+      etaMessage = `llega en ${tiempoEstimado} minutos`;
+    }
+
+    const vehicleInfo = `${driverData?.vehiculo?.modelo || 'su vehículo'} ${driverData?.vehiculo?.color || ''}`;
+    const driverName = driverData?.nombre || driverData?.nombreCompleto || 'el conductor';
+
+    await sendToTokens(tokens, {
+      notification: {
+        title: '¡Conductor encontrado!',
+        body: `${driverName} ${etaMessage} en ${vehicleInfo}`,
+      },
+      data: {
+        rideId: event.params.rideId,
+        action: 'ver_detalles',
+      },
+    })
+  }
+)
+
+// Función para notificar al pasajero cuando el conductor ha llegado
+export const onDriverArrived = onDocumentUpdated(
+  'rides/{rideId}',
+  async (event) => {
+    const before = event.data?.before?.data()
+    const after = event.data?.after?.data()
+
+    if (!before || !after) return
+    // Detectar cuando el conductor está cerca del origen (menos de 100 metros)
+    if (!after.taxistaUbicacion || !after.origen) return
+
+    const distancia = calculateDistance(
+      after.taxistaUbicacion.latitude,
+      after.taxistaUbicacion.longitude,
+      after.origen.latitude,
+      after.origen.longitude
+    );
+
+    // Si está a menos de 100 metros y antes no estaba tan cerca
+    const distanciaAnterior = before.taxistaUbicacion && before.origen ?
+      calculateDistance(
+        before.taxistaUbicacion.latitude,
+        before.taxistaUbicacion.longitude,
+        before.origen.latitude,
+        before.origen.longitude
+      ) : Infinity;
+
+    // Solo notificar si antes estaba lejos y ahora está cerca
+    if (distanciaAnterior <= 0.1 || distancia > 0.1) return
+
+    // Obtener tokens FCM del pasajero
+    const passengerRef = db.collection('passengers').doc(after.pasajeroUid)
+    const passengerSnap = await passengerRef.get()
+    const tokens = passengerSnap.data()?.fcmTokens || []
+
+    if (tokens.length === 0) return
+
+    // Obtener información del conductor
+    const driverRef = db.collection('drivers').doc(after.driverUid)
+    const driverSnap = await driverRef.get()
+    const driverData = driverSnap.data()
+    const driverName = driverData?.nombre || driverData?.nombreCompleto || 'su conductor';
+
+    await sendToTokens(tokens, {
+      notification: {
+        title: 'Tu conductor ha llegado 🚗',
+        body: `${driverName} está esperándote`,
+      },
+      data: {
+        rideId: event.params.rideId,
+        action: 'ubicacion_conductor',
+      },
+    })
+  }
+)
+
+// Función para notificar al pasajero cuando inicia el viaje
+export const onTripStarted = onDocumentUpdated(
+  'rides/{rideId}',
+  async (event) => {
+    const before = event.data?.before?.data()
+    const after = event.data?.after?.data()
+
+    if (!before || !after) return
+    // Solo procesar si el estado cambió a 'en_viaje' (o 'en curso' en el sistema actual)
+    if (before.estado === after.estado) return
+    if (before.estado === 'en curso' && after.estado === 'en curso') return // Evitar duplicados
+    if (after.estado !== 'en curso') return
+    if (!after.pasajeroUid) return
+
+    // Obtener tokens FCM del pasajero
+    const passengerRef = db.collection('passengers').doc(after.pasajeroUid)
+    const passengerSnap = await passengerRef.get()
+    const tokens = passengerSnap.data()?.fcmTokens || []
+
+    if (tokens.length === 0) return
+
+    const destination = after.destinoTexto || 'el destino';
+
+    await sendToTokens(tokens, {
+      notification: {
+        title: 'Viaje iniciado',
+        body: `Disfruta tu viaje hacia ${destination}`,
+      },
+      data: {
+        rideId: event.params.rideId,
+        action: 'seguimiento_viaje',
+      },
+    })
+  }
+)
+
+// Función para notificar al pasajero cuando se completa el viaje
+export const onTripCompleted = onDocumentUpdated(
+  'rides/{rideId}',
+  async (event) => {
+    const before = event.data?.before?.data()
+    const after = event.data?.after?.data()
+
+    if (!before || !after) return
+    // Solo procesar si el estado cambió a 'finalizado'
+    if (before.estado === after.estado) return
+    if (after.estado !== 'finalizado') return
+    if (!after.pasajeroUid) return
+
+    // Obtener tokens FCM del pasajero
+    const passengerRef = db.collection('passengers').doc(after.pasajeroUid)
+    const passengerSnap = await passengerRef.get()
+    const tokens = passengerSnap.data()?.fcmTokens || []
+
+    if (tokens.length === 0) return
+
+    // Calcular tarifa si está disponible
+    const fare = after.montoFinal ? `$${after.montoFinal}` : 'la tarifa';
+
+    await sendToTokens(tokens, {
+      notification: {
+        title: 'Has llegado a tu destino',
+        body: `Tarifa: ${fare} • Por favor califica tu viaje`,
+      },
+      data: {
+        rideId: event.params.rideId,
+        action: 'calificar',
+      },
+    })
+  }
+)
+
+// Función auxiliar para calcular distancia entre dos puntos (en kilómetros)
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Radio de la Tierra en km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distancia en km
+}
+
+function deg2rad(deg) {
+  return deg * (Math.PI / 180);
+}
