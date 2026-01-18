@@ -16,6 +16,9 @@ async function sendToTokens(tokens, payload) {
   })
 }
 
+// Importar la función de procesamiento de pagos
+import { processPayment } from './processPayment.js'
+
 export const notifyDriversOnNewRide = onDocumentCreated(
   'rides/{rideId}',
   async (event) => {
