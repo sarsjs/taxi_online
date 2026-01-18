@@ -291,6 +291,126 @@
   margin-top: 0.4rem;
 }
 
+.tracking-eta-container {
+  position: absolute;
+  top: 1.2rem;
+  left: 1.2rem;
+  right: 1.2rem;
+  z-index: 1000;
+  background: white;
+  border-radius: 18px;
+  padding: 1.2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+}
+
+.status-card {
+  padding: 1rem;
+  border-radius: 14px;
+  margin-bottom: 1rem;
+}
+
+.status-card.buscando {
+  background: #f8f9fa;
+  text-align: center;
+}
+
+.loading-animation {
+  margin-top: 1rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #ff7a4c;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.status-card.conductor-asignado {
+  background: #e8f4fd;
+  border: 1px solid #bee3f8;
+}
+
+.driver-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.driver-photo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.driver-details h3 {
+  margin: 0 0 0.5rem 0;
+  color: #2d3748;
+}
+
+.rating {
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.vehicle-info {
+  margin: 0.3rem 0;
+  color: #4a5568;
+}
+
+.arrival-message {
+  font-weight: bold;
+  color: #2b6cb0;
+  margin: 0.5rem 0 0;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.call-button, .cancel-button {
+  flex: 1;
+  padding: 0.8rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.call-button {
+  background: #48bb78;
+  color: white;
+}
+
+.cancel-button {
+  background: #f56565;
+  color: white;
+}
+
+.status-card.en-viaje {
+  background: #e6fffa;
+  border: 1px solid #81c784;
+  text-align: center;
+}
+
+.status-card.completado {
+  background: #f0fff4;
+  border: 1px solid #a7f3d0;
+  text-align: center;
+}
+
 .list {
   display: grid;
   gap: 0.75rem;

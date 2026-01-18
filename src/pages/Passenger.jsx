@@ -17,6 +17,7 @@ import MapView from '../components/MapView'
 import RouteSelector from '../components/RouteSelector'
 import LandmarkSelector from '../components/LandmarkSelector'
 import TarifaEstimada from '../components/TarifaEstimada'
+import TrackingETA from '../components/TrackingETA'
 import { uploadFile } from '../utils/uploadFile'
 import { calcularTarifa } from '../utils/tarifasCalculator'
 import { listenForegroundMessages, registerFcmToken } from '../utils/notifications'
@@ -147,6 +148,8 @@ function Passenger() {
         scheduledAt: scheduledTimestamp,
         tipo: isScheduled ? 'programado' : 'inmediato',
         createdAt: serverTimestamp(),
+        taxistaUbicacion: null,
+        tarifaEstimada: distanciaRuta && duracionRuta ? calcularTarifa(distanciaRuta, duracionRuta) : null,
       })
       setRideId(rideRef.id)
       setDestLat('')
@@ -388,6 +391,12 @@ function Passenger() {
                 </>
               )}
             </section>
+            {rideId && (
+              <TrackingETA
+                rideId={rideId}
+                passengerLocation={mapOrigin}
+              />
+            )}
           </div>
 
           <section className="card panel">

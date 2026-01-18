@@ -241,6 +241,13 @@ function Driver() {
           ubicacion: location,
           ultimoActivo: serverTimestamp(),
         });
+
+        // Actualizar también la ubicación en el viaje activo si existe
+        if (activeRideId) {
+          await updateDoc(doc(db, 'rides', activeRideId), {
+            taxistaUbicacion: location,
+          });
+        }
       } catch (error) {
         setLocationError('No se pudo acceder a la ubicación. Verifica tu conexión.');
       }
@@ -323,6 +330,7 @@ function Driver() {
     await updateDoc(doc(db, 'rides', rideId), {
       driverUid: user.uid,
       estado: 'aceptado',
+      taxistaUbicacion: driverDoc?.ubicacion || null,
     })
     await updateDoc(driverRef, {
       disponible: false,
