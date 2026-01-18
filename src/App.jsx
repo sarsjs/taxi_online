@@ -52,18 +52,22 @@ function App() {
       </main>
 
       <nav className="bottom-nav">
-        <Link
-          className={location.pathname === '/pasajero' ? 'active' : ''}
-          to="/pasajero"
-        >
-          Pasajero
-        </Link>
-        <Link
-          className={location.pathname === '/taxista' ? 'active' : ''}
-          to="/taxista"
-        >
-          Taxista
-        </Link>
+        {location.pathname !== '/pasajero' && location.pathname !== '/taxista' && (
+          <>
+            <Link
+              className={location.pathname === '/pasajero' ? 'active' : ''}
+              to="/pasajero"
+            >
+              Pasajero
+            </Link>
+            <Link
+              className={location.pathname === '/taxista' ? 'active' : ''}
+              to="/taxista"
+            >
+              Taxista
+            </Link>
+          </>
+        )}
         {isAdmin && (
           <Link
             className={location.pathname === '/admin' ? 'active' : ''}
