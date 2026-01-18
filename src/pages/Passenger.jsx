@@ -343,6 +343,7 @@ function Passenger() {
               origin={mapOrigin}
               destination={mapDestination}
               driverLocation={driverData?.ubicacion || null}
+              showAvailableTaxis={!rideData || rideData.estado !== 'aceptado'}
             />
             <section className="card map-overlay">
               <h3 className="section-title">Estado del viaje</h3>

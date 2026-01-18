@@ -4,7 +4,21 @@ import {
   CircleMarker,
   Tooltip,
   useMapEvents,
+  Marker,
+  Popup
 } from 'react-leaflet'
+import L from 'leaflet'
+import { useEffect, useRef, useState } from 'react'
+import { collection, onSnapshot, query, where } from 'firebase/firestore'
+import { db } from '../firebase'
+
+// Crear ícono de taxi personalizado
+const taxiIcon = L.icon({
+  iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjMiIHk9IjgiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxMSIgcng9IjIiIHJ5PSIyIj48L3JlY3Q+PGNpcmNsZSBjeD0iOC41IiBjeT0iMTkiIHI9IjEiPjwvY2lyY2xlPjxjaXJjbGUgY3g9IjE1LjUiIGN5PSIxOSIgcj0iMSI+PC9jaXJjbGU+PHBhdGggZD0iTTEyIDE2SDRhMiAyIDAgMCAxLTItMlY4YTIgMiAwIDAgMSAyLTJoMTZhMiAyIDAgMCAxIDIgMnY2YTIgMiAwIDAgMS0yIDJIMiI+PC9wYXRoPjwvc3ZnPg==',
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -12]
+})
 
 function MapClickHandler({ onPick }) {
   useMapEvents({
@@ -24,6 +38,8 @@ function MapView({
   destination,
   onPickDestination,
   onPickOrigin,
+  showAvailableTaxis = false,
+  currentUserLocation = null
 }) {
   const hasDriver = Boolean(driverLocation)
   const hasOrigin = Boolean(origin)
@@ -34,7 +50,50 @@ function MapView({
       ? [origin.latitude, origin.longitude]
       : hasDestination
         ? [destination.latitude, destination.longitude]
-      : [19.4326, -99.1332]
+      : currentUserLocation
+        ? [currentUserLocation.latitude, currentUserLocation.longitude]
+        : [19.4326, -99.1332]
+
+  // Estado para almacenar los taxis disponibles
+  const [availableTaxis, setAvailableTaxis] = useState([])
+  const taxisRef = useRef({})
+
+  // Listener para taxis disponibles
+  useEffect(() => {
+    if (!showAvailableTaxis) return
+
+    const q = query(
+      collection(db, 'drivers'),
+      where('disponible', '==', true),
+      where('ubicacion', '!=', null)
+    )
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const taxis = []
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added' || change.type === 'modified') {
+          const data = change.doc.data()
+          if (data.ubicacion) {
+            taxis.push({
+              id: change.doc.id,
+              lat: data.ubicacion.latitude,
+              lng: data.ubicacion.longitude,
+              nombre: data.nombre || data.nombreCompleto || 'Taxista',
+              calificacion: data.calificacion || 0,
+              vehiculo: data.vehiculo || { modelo: 'Desconocido', placas: 'N/A', color: 'Desconocido' },
+              ...data
+            })
+          }
+        } else if (change.type === 'removed') {
+          // Eliminar el taxi del estado
+          setAvailableTaxis(prev => prev.filter(taxi => taxi.id !== change.doc.id))
+        }
+      })
+      setAvailableTaxis(taxis)
+    })
+
+    return () => unsubscribe()
+  }, [showAvailableTaxis])
 
   return (
     <div className="map-shell">
@@ -79,6 +138,22 @@ function MapView({
             </Tooltip>
           </CircleMarker>
         )}
+        {showAvailableTaxis && availableTaxis.map((taxi) => (
+          <Marker
+            key={taxi.id}
+            position={[taxi.lat, taxi.lng]}
+            icon={taxiIcon}
+          >
+            <Popup>
+              <div>
+                <strong>{taxi.nombre}</strong><br />
+                Calificación: {taxi.calificacion}/5<br />
+                Vehículo: {taxi.vehiculo.modelo}<br />
+                Placas: {taxi.vehiculo.placas}
+              </div>
+            </Popup>
+          </Marker>
+        ))}
       </MapContainer>
     </div>
   )

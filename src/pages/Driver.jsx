@@ -247,7 +247,7 @@ function Driver() {
     };
 
     updateLocation()
-    intervalId = setInterval(updateLocation, 12000)
+    intervalId = setInterval(updateLocation, 5000) // Actualizar cada 5 segundos
 
     return () => {
       if (intervalId) clearInterval(intervalId)
