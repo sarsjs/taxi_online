@@ -27,4 +27,4 @@ jobs:
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
       - run: npm install -g firebase-tools
-      - run: firebase deploy --only hosting,firestore:rules,firestore:indexes,storage,functions --project taxi-online-52593 --force
+      - run: firebase deploy --only hosting,firestore:rules,firestore:indexes,storage --project taxi-online-52593
