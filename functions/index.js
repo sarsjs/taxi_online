@@ -149,57 +149,7 @@ export const notifyDriverOnStatusChange = onDocumentUpdated(
   },
 )
 
-// export const weeklyBilling = onSchedule(
-  {
-    schedule: '59 23 * * 0',
-    timeZone: 'America/Mexico_City',
-  },
-  async () => {
-    const billingSnap = await db.collection('settings').doc('billing').get()
-    const billing = billingSnap.exists ? billingSnap.data() : {}
-    const weeklyPercent = Number(billing.weeklyPercent ?? 10)
 
-    const now = new Date()
-    const day = now.getDay()
-    const diffToMonday = (day + 6) % 7
-    const periodEnd = new Date(now)
-    periodEnd.setHours(23, 59, 59, 999)
-    const periodStart = new Date(now)
-    periodStart.setDate(now.getDate() - diffToMonday)
-    periodStart.setHours(0, 0, 0, 0)
-
-    const driversSnap = await db.collection('drivers').get()
-
-    for (const driver of driversSnap.docs) {
-      const ridesSnap = await db
-        .collection('rides')
-        .where('driverUid', '==', driver.id)
-        .where('estado', '==', 'finalizado')
-        .where('finalizadoAt', '>=', periodStart)
-        .where('finalizadoAt', '<=', periodEnd)
-        .get()
-
-      const total = ridesSnap.docs.reduce(
-        (sum, ride) => sum + Number(ride.data().montoFinal || 0),
-        0,
-      )
-      const fee = (total * weeklyPercent) / 100
-
-      await db.collection('drivers').doc(driver.id).set(
-        {
-          weeklyTotal: total,
-          weeklyFee: fee,
-          paymentStatus: 'pendiente',
-          bloqueadoPorPago: true,
-          billingPeriodStart: admin.firestore.Timestamp.fromDate(periodStart),
-          billingPeriodEnd: admin.firestore.Timestamp.fromDate(periodEnd),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true },
-      )
-    }
-  },
-)
 
 // Función para calcular tarifas basadas en rutas predefinidas
 export const calculateRouteFare = onDocumentCreated(
