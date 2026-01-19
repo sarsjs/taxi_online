@@ -149,7 +149,7 @@ export const notifyDriverOnStatusChange = onDocumentUpdated(
   },
 )
 
-export const weeklyBilling = onSchedule(
+// export const weeklyBilling = onSchedule(
   {
     schedule: '59 23 * * 0',
     timeZone: 'America/Mexico_City',
