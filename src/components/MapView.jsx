@@ -5,9 +5,12 @@ import {
   Tooltip,
   useMapEvents,
   Marker,
-  Popup
+  Popup,
+  useMap
 } from 'react-leaflet'
 import L from 'leaflet'
+import 'leaflet.locatecontrol/dist/L.Control.Locate.min.css'
+import 'leaflet.locatecontrol'
 import { useEffect, useRef, useState } from 'react'
 import { collection, onSnapshot, query, where } from 'firebase/firestore'
 import { db } from '../firebase'
@@ -19,6 +22,64 @@ const taxiIcon = L.icon({
   iconAnchor: [12, 12],
   popupAnchor: [0, -12]
 })
+
+// Componente para el control de localización
+function LocateControlComponent() {
+  const map = useMap()
+
+  useEffect(() => {
+    const lc = L.control.locate({
+      position: 'topleft',
+      strings: {
+        title: "Mostrar mi ubicación"
+      },
+      locateOptions: {
+        enableHighAccuracy: true
+      }
+    }).addTo(map)
+
+    return () => {
+      map.removeControl(lc)
+    }
+  }, [map])
+
+  return null
+}
+
+// Componente para centrar automáticamente al cargar
+function AutoCenterOnLoad({ currentUserLocation }) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (navigator.geolocation && !currentUserLocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords
+          map.setView([latitude, longitude], 15)
+
+          // Agregar marcador de la ubicación del usuario
+          L.marker([latitude, longitude], {
+            icon: L.divIcon({
+              className: 'current-location-marker',
+              html: '<div style="background-color: #4285f4; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>',
+              iconSize: [24, 24],
+              iconAnchor: [12, 12]
+            })
+          }).addTo(map).bindPopup('Tu ubicación')
+        },
+        (error) => {
+          console.error("Error obteniendo ubicación:", error)
+          // Mantener vista por defecto si falla
+        }
+      )
+    } else if (currentUserLocation) {
+      // Si ya tenemos la ubicación del usuario, centrar en ella
+      map.setView([currentUserLocation.latitude, currentUserLocation.longitude], 15)
+    }
+  }, [map, currentUserLocation])
+
+  return null
+}
 
 function MapClickHandler({ onPick }) {
   useMapEvents({
@@ -101,6 +162,8 @@ function MapView({
         {(onPickOrigin || onPickDestination) && (
           <MapClickHandler onPick={onPickOrigin || onPickDestination} />
         )}
+        <LocateControlComponent />
+        <AutoCenterOnLoad currentUserLocation={currentUserLocation} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

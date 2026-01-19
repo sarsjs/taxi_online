@@ -138,6 +138,7 @@ function Passenger() {
       const scheduledTimestamp = isScheduled
         ? Timestamp.fromDate(new Date(scheduledAt))
         : null
+
       const rideRef = await addDoc(collection(db, 'rides'), {
         pasajeroUid: user.uid,
         driverUid: null,
@@ -150,6 +151,7 @@ function Passenger() {
         createdAt: serverTimestamp(),
         taxistaUbicacion: null,
         tarifaEstimada: distanciaRuta && duracionRuta ? calcularTarifa(distanciaRuta, duracionRuta) : null,
+
       })
       setRideId(rideRef.id)
       setDestLat('')
@@ -401,6 +403,8 @@ function Passenger() {
 
           <section className="card panel">
             <h3 className="section-title">Solicitar taxi</h3>
+
+
             <div className="field">
               <label htmlFor="schedule-toggle">
                 <input
