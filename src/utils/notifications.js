@@ -35,7 +35,7 @@ export const saveFcmToken = async (userId, token, collectionName) => {
   
   try {
     const { doc, updateDoc, arrayUnion } = await import('firebase/firestore');
-    const { db } from '../firebase';
+    const { db } = await import( '../firebase');
     
     const userRef = doc(db, collectionName, userId);
     await updateDoc(userRef, {
