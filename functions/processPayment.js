@@ -4,7 +4,7 @@ import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
 admin.initializeApp();
 
 const db = admin.firestore();
-const conekta = require('conekta'); // Asegúrate de instalar conekta: npm install conekta
+import conekta from 'conekta'; // Asegúrate de instalar conekta: npm install conekta
 
 // Configurar Conekta con la llave privada
 conekta.api_key = process.env.CONEKTA_PRIVATE_KEY;
