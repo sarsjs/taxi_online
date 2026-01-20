@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   collection,
   doc,
@@ -12,7 +12,6 @@ import {
   limit,
 } from 'firebase/firestore'
 import { db } from '../firebase'
-import AuthOptions from '../components/AuthOptions'
 import { useAuth } from '../hooks/useAuth'
 import MapView from '../components/MapView'
 import RouteSelector from '../components/RouteSelector'
@@ -52,11 +51,14 @@ function Driver() {
   const [canceledRideId, setCanceledRideId] = useState('')
   const [fareAmount, setFareAmount] = useState('')
   const [fareError, setFareError] = useState('')
+  const alertShownRef = useRef(false)
 
   const gracePeriodMs = 3 * 24 * 60 * 60 * 1000
   const createdAtMs = driverDoc?.createdAt?.toMillis?.()
   const isVerified = driverDoc?.verificado === true
   const paymentBlocked = driverDoc?.bloqueadoPorPago === true
+  const isSuspended = driverDoc?.estado === 'suspendido'
+  const pendingBalance = Number(driverDoc?.saldoPendiente ?? 0)
   const timeRemainingMs =
     typeof createdAtMs === 'number'
       ? gracePeriodMs - (Date.now() - createdAtMs)
@@ -113,13 +115,23 @@ function Driver() {
 
   useEffect(() => {
     if (!driverRef || !driverDoc) return
-    if ((!isVerified && isBlocked && driverDoc.disponible) || paymentBlocked) {
+    if (
+      (!isVerified && isBlocked && driverDoc.disponible)
+      || paymentBlocked
+      || isSuspended
+    ) {
       updateDoc(driverRef, {
         disponible: false,
         ultimoActivo: serverTimestamp(),
       })
     }
-  }, [driverRef, driverDoc, isVerified, isBlocked, paymentBlocked])
+  }, [driverRef, driverDoc, isVerified, isBlocked, paymentBlocked, isSuspended])
+
+  useEffect(() => {
+    if (!isSuspended || alertShownRef.current) return
+    alertShownRef.current = true
+    alert('Cuenta suspendida por falta de pago de comisiones.')
+  }, [isSuspended])
 
   useEffect(() => {
     localStorage.setItem('driverRadiusKm', String(radiusKm))
@@ -279,6 +291,11 @@ function Driver() {
         ubicacion: null,
         radioKm: radiusKm,
         createdAt: driverDoc?.createdAt || serverTimestamp(),
+        fechaRegistro: driverDoc?.fechaRegistro || serverTimestamp(),
+        saldoPendiente:
+          typeof driverDoc?.saldoPendiente === 'number' ? driverDoc.saldoPendiente : 0,
+        estado: driverDoc?.estado || 'prueba',
+        rol: driverDoc?.rol || 'taxista',
         pagos: {
           efectivo: cashEnabled,
           transferencia: transferEnabled,
@@ -306,6 +323,12 @@ function Driver() {
       )
       return
     }
+    if (isSuspended) {
+      setVerificationError(
+        'Tu cuenta esta suspendida por falta de pago de comisiones.',
+      )
+      return
+    }
     await updateDoc(driverRef, {
       disponible: !driverDoc.disponible,
       radioKm: radiusKm,
@@ -324,6 +347,12 @@ function Driver() {
     if (paymentBlocked) {
       setVerificationError(
         'Tu cuenta esta bloqueada por pago pendiente. Realiza el pago semanal.',
+      )
+      return
+    }
+    if (isSuspended) {
+      setVerificationError(
+        'Tu cuenta esta suspendida por falta de pago de comisiones.',
       )
       return
     }
@@ -444,8 +473,6 @@ function Driver() {
 
   return (
     <div className="screen">
-      {!user && <AuthOptions recaptchaId="recaptcha-driver" />}
-
       {user && (
         <>
           <div className="map-hero">
@@ -454,6 +481,13 @@ function Driver() {
               origin={activeRide?.origen || null}
               destination={activeRide?.destino || null}
             />
+            <div className="map-balance-badge">
+              <span
+                className={`balance-pill ${pendingBalance > 0 ? 'warning' : ''}`}
+              >
+                Saldo: ${pendingBalance.toFixed(2)}
+              </span>
+            </div>
             <section className="card map-overlay">
               <h3 className="section-title">Estado del taxista</h3>
               {!isVerified && (
@@ -464,6 +498,11 @@ function Driver() {
               {paymentBlocked && (
                 <p className="muted">
                   Pago semanal pendiente. No puedes recibir viajes.
+                </p>
+              )}
+              {isSuspended && (
+                <p className="muted">
+                  Cuenta suspendida por falta de pago de comisiones.
                 </p>
               )}
               {driverDoc?.weeklyFee != null && (
