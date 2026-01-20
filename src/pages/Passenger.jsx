@@ -12,7 +12,6 @@ import {
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../hooks/useAuth'
-import AuthOptions from '../components/AuthOptions'
 import MapView from '../components/MapView'
 import RouteSelector from '../components/RouteSelector'
 import LandmarkSelector from '../components/LandmarkSelector'
@@ -355,8 +354,6 @@ function Passenger() {
 
   return (
     <div className="screen">
-      {!user && <AuthOptions recaptchaId="recaptcha-passenger" />}
-
       {user && (
         <>
           <div className="map-hero">

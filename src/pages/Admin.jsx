@@ -14,7 +14,6 @@ import {
 import { db } from '../firebase'
 import { useAuth } from '../hooks/useAuth'
 import { useAdmin } from '../hooks/useAdmin'
-import EmailAuth from '../components/EmailAuth'
 
 const DEFAULT_TARIFFS = {
   baseFare: 0,
@@ -229,7 +228,14 @@ function Admin() {
   }
 
   if (!user) {
-    return <EmailAuth />
+    return (
+      <section className="card">
+        <h2 className="section-title">Panel admin</h2>
+        <p className="muted">
+          Acceso exclusivo. Ingresa desde la ruta privada de administración.
+        </p>
+      </section>
+    )
   }
 
   if (!isAdmin) {

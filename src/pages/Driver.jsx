@@ -12,7 +12,6 @@ import {
   limit,
 } from 'firebase/firestore'
 import { db } from '../firebase'
-import AuthOptions from '../components/AuthOptions'
 import { useAuth } from '../hooks/useAuth'
 import MapView from '../components/MapView'
 import RouteSelector from '../components/RouteSelector'
@@ -474,8 +473,6 @@ function Driver() {
 
   return (
     <div className="screen">
-      {!user && <AuthOptions recaptchaId="recaptcha-driver" />}
-
       {user && (
         <>
           <div className="map-hero">

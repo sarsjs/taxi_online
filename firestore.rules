@@ -42,7 +42,10 @@ service cloud.firestore {
 
     match /passengers/{passengerId} {
       allow read: if request.auth != null && request.auth.uid == passengerId;
-      allow create, update: if request.auth != null && request.auth.uid == passengerId;
+      allow create: if request.auth != null
+        && request.auth.uid == passengerId
+        && !exists(/databases/$(database)/documents/drivers/$(request.auth.uid));
+      allow update: if request.auth != null && request.auth.uid == passengerId;
     }
 
     match /settings/{docId} {

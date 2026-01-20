@@ -145,6 +145,16 @@
   flex-wrap: wrap;
 }
 
+.role-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.role-option input {
+  display: none;
+}
+
 .button {
   border: none;
   border-radius: var(--border-radius-full);
