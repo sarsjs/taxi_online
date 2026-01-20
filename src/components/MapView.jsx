@@ -26,30 +26,35 @@ function AutoCenterOnLoad({ currentUserLocation }) {
   const map = useMap()
 
   useEffect(() => {
-    if (navigator.geolocation && !currentUserLocation) {
+    if (map && navigator.geolocation && !currentUserLocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords
-          map.setView([latitude, longitude], 15)
+          // Verificar que el mapa aún exista antes de manipularlo
+          if (map && map.getContainer()) {
+            map.setView([latitude, longitude], 15)
 
-          // Agregar marcador de la ubicación del usuario
-          L.marker([latitude, longitude], {
-            icon: L.divIcon({
-              className: 'current-location-marker',
-              html: '<div style="background-color: #4285f4; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>',
-              iconSize: [24, 24],
-              iconAnchor: [12, 12]
-            })
-          }).addTo(map).bindPopup('Tu ubicación')
+            // Agregar marcador de la ubicación del usuario
+            L.marker([latitude, longitude], {
+              icon: L.divIcon({
+                className: 'current-location-marker',
+                html: '<div style="background-color: #4285f4; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+              })
+            }).addTo(map).bindPopup('Tu ubicación')
+          }
         },
         (error) => {
           console.error("Error obteniendo ubicación:", error)
           // Mantener vista por defecto si falla
         }
       )
-    } else if (currentUserLocation) {
+    } else if (map && currentUserLocation) {
       // Si ya tenemos la ubicación del usuario, centrar en ella
-      map.setView([currentUserLocation.latitude, currentUserLocation.longitude], 15)
+      if (map && map.getContainer()) {
+        map.setView([currentUserLocation.latitude, currentUserLocation.longitude], 15)
+      }
     }
   }, [map, currentUserLocation])
 
