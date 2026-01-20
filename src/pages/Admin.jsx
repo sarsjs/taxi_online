@@ -8,6 +8,7 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  increment,
   where,
 } from 'firebase/firestore'
 import { db } from '../firebase'
@@ -48,6 +49,9 @@ function Admin() {
   const [savingZone, setSavingZone] = useState(false)
   const [drivers, setDrivers] = useState([])
   const [savingVerification, setSavingVerification] = useState('')
+  const [paymentDriverId, setPaymentDriverId] = useState('')
+  const [paymentAmount, setPaymentAmount] = useState('')
+  const [paymentMessage, setPaymentMessage] = useState('')
 
   useEffect(() => {
     if (!user || !isAdmin) return
@@ -189,6 +193,27 @@ function Admin() {
       pagoAt: serverTimestamp(),
     })
     setSavingVerification('')
+  }
+
+  const applyDriverPayment = async () => {
+    setPaymentMessage('')
+    const amount = Number.parseFloat(paymentAmount)
+    if (!paymentDriverId || !Number.isFinite(amount) || amount <= 0) {
+      setPaymentMessage('Ingresa un ID de taxista y un monto válido.')
+      return
+    }
+    try {
+      await updateDoc(doc(db, 'drivers', paymentDriverId), {
+        saldoPendiente: increment(-amount),
+        ultimoAbonoAt: serverTimestamp(),
+        ultimoAbonoMonto: amount,
+      })
+      setPaymentMessage('Abono registrado correctamente.')
+      setPaymentAmount('')
+    } catch (error) {
+      console.error('Error registrando abono:', error)
+      setPaymentMessage('No se pudo registrar el abono.')
+    }
   }
 
   const zoneOptions = useMemo(() => {
@@ -574,6 +599,41 @@ function Admin() {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="card">
+        <h3 className="section-title">Abonos de comisiones</h3>
+        <div className="field">
+          <label htmlFor="payment-driver">Taxista</label>
+          <select
+            id="payment-driver"
+            value={paymentDriverId}
+            onChange={(event) => setPaymentDriverId(event.target.value)}
+          >
+            <option value="">Selecciona un taxista</option>
+            {drivers.map((driver) => (
+              <option key={driver.id} value={driver.id}>
+                {driver.nombreCompleto || driver.nombre || driver.id}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor="payment-amount">Monto pagado (MXN)</label>
+          <input
+            id="payment-amount"
+            type="number"
+            min="0"
+            step="0.01"
+            value={paymentAmount}
+            onChange={(event) => setPaymentAmount(event.target.value)}
+            placeholder="Ej: 150.00"
+          />
+        </div>
+        {paymentMessage && <p className="muted">{paymentMessage}</p>}
+        <button className="button" onClick={applyDriverPayment}>
+          Registrar abono
+        </button>
       </section>
 
       <section className="card">

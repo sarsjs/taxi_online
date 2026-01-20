@@ -232,7 +232,7 @@
 }
 
 .map-hero .map-shell {
-  height: 420px;
+  height: 100vh;
   border-radius: var(--border-radius-3xl);
   border: 1px solid var(--border);
 }
@@ -240,13 +240,103 @@
 .map-overlay {
   position: absolute;
   left: var(--spacing-3xl);
-  right: var(--spacing-3xl);
-  bottom: var(--spacing-3xl);
+  top: calc(var(--spacing-4xl) + 4.8rem);
+  width: min(360px, 90%);
   backdrop-filter: blur(10px);
   background: rgba(255, 255, 255, 0.92);
   border-radius: var(--border-radius-xl);
   padding: var(--spacing-lg);
   box-shadow: var(--shadow-lg);
+  z-index: 6;
+}
+
+.map-search-card {
+  position: absolute;
+  top: var(--spacing-4xl);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  width: min(600px, 90%);
+  background: var(--surface);
+  padding: var(--spacing-xl) var(--spacing-3xl);
+  border-radius: var(--border-radius-2xl);
+  box-shadow: var(--shadow-lg);
+  z-index: 5;
+}
+
+.map-search-card input {
+  border: none;
+  background: transparent;
+  width: 100%;
+  font-size: var(--font-size-base);
+  outline: none;
+  color: var(--text-primary);
+}
+
+.map-balance-badge {
+  position: absolute;
+  top: calc(var(--spacing-4xl) + 3.5rem);
+  right: var(--spacing-4xl);
+  z-index: 6;
+}
+
+.balance-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-radius: var(--border-radius-full);
+  background: #27ae60;
+  color: var(--surface);
+  font-weight: var(--font-weight-semibold);
+  box-shadow: var(--shadow-md);
+}
+
+.balance-pill.warning {
+  background: #e63946;
+}
+
+.map-bottom-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  padding: var(--spacing-4xl);
+  border-radius: 28px 28px 0 0;
+  box-shadow: var(--shadow-xl);
+  z-index: 5;
+  display: grid;
+  gap: var(--spacing-xl);
+}
+
+.sheet-handle {
+  width: 48px;
+  height: 4px;
+  background: var(--divider);
+  border-radius: var(--border-radius-full);
+  margin: 0 auto;
+}
+
+.sheet-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2xl);
+}
+
+.sheet-info h3 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.price-tag {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  padding: var(--spacing-sm) var(--spacing-xl);
+  border-radius: var(--border-radius-full);
+  font-weight: var(--font-weight-semibold);
 }
 
 .panel {
@@ -612,7 +702,20 @@
   }
 
   .map-hero .map-shell {
-    height: 320px;
+    height: 70vh;
+  }
+
+  .map-search-card {
+    top: var(--spacing-2xl);
+  }
+
+  .map-balance-badge {
+    top: calc(var(--spacing-2xl) + 3.5rem);
+    right: var(--spacing-2xl);
+  }
+
+  .map-bottom-sheet {
+    padding: var(--spacing-3xl);
   }
 
   .bottom-nav {
