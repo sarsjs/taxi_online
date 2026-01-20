@@ -9,8 +9,6 @@ import {
   useMap
 } from 'react-leaflet'
 import L from 'leaflet'
-import 'leaflet.locatecontrol/dist/L.Control.Locate.min.css'
-import 'leaflet.locatecontrol'
 import { useEffect, useRef, useState } from 'react'
 import { collection, onSnapshot, query, where } from 'firebase/firestore'
 import { db } from '../firebase'
@@ -22,29 +20,6 @@ const taxiIcon = L.icon({
   iconAnchor: [12, 12],
   popupAnchor: [0, -12]
 })
-
-// Componente para el control de localización
-function LocateControlComponent() {
-  const map = useMap()
-
-  useEffect(() => {
-    const lc = L.control.locate({
-      position: 'topleft',
-      strings: {
-        title: "Mostrar mi ubicación"
-      },
-      locateOptions: {
-        enableHighAccuracy: true
-      }
-    }).addTo(map)
-
-    return () => {
-      map.removeControl(lc)
-    }
-  }, [map])
-
-  return null
-}
 
 // Componente para centrar automáticamente al cargar
 function AutoCenterOnLoad({ currentUserLocation }) {
@@ -162,7 +137,6 @@ function MapView({
         {(onPickOrigin || onPickDestination) && (
           <MapClickHandler onPick={onPickOrigin || onPickDestination} />
         )}
-        <LocateControlComponent />
         <AutoCenterOnLoad currentUserLocation={currentUserLocation} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
