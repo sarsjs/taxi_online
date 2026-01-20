@@ -1,14 +1,17 @@
 import { useState } from 'react'
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-} from 'firebase/auth'
+import { signInWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '../firebase'
+
+const allowedEmailSet = new Set(
+  (import.meta.env.VITE_ADMIN_EMAILS || '')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean),
+)
 
 function EmailAuth() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isRegister, setIsRegister] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -16,11 +19,12 @@ function EmailAuth() {
     setError('')
     setLoading(true)
     try {
-      if (isRegister) {
-        await createUserWithEmailAndPassword(auth, email.trim(), password)
-      } else {
-        await signInWithEmailAndPassword(auth, email.trim(), password)
+      const normalizedEmail = email.trim().toLowerCase()
+      if (allowedEmailSet.size > 0 && !allowedEmailSet.has(normalizedEmail)) {
+        setError('Este acceso es exclusivo para administracion.')
+        return
       }
+      await signInWithEmailAndPassword(auth, normalizedEmail, password)
     } catch {
       setError('No se pudo autenticar. Revisa tus datos.')
     } finally {
@@ -31,6 +35,9 @@ function EmailAuth() {
   return (
     <div className="card">
       <h2 className="section-title">Acceso administrador</h2>
+      <p className="muted">
+        Este acceso es exclusivo. Usa el correo autorizado para ingresar.
+      </p>
       <div className="field">
         <label htmlFor="admin-email">Correo</label>
         <input
@@ -55,15 +62,7 @@ function EmailAuth() {
         onClick={handleSubmit}
         disabled={loading || !email.trim() || password.length < 6}
       >
-        {isRegister ? 'Crear cuenta' : 'Iniciar sesion'}
-      </button>
-      <button
-        className="button outline"
-        type="button"
-        onClick={() => setIsRegister((prev) => !prev)}
-        style={{ marginTop: '0.8rem' }}
-      >
-        {isRegister ? 'Ya tengo cuenta' : 'Crear cuenta'}
+        Iniciar sesion
       </button>
       {error && <p className="muted">{error}</p>}
     </div>

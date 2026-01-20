@@ -18,6 +18,9 @@ export function useAuth() {
   return {
     user,
     initializing,
-    signOut: () => signOut(auth),
+    signOut: async () => {
+      await signOut(auth)
+      window.location.href = '/'
+    },
   }
 }

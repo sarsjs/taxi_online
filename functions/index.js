@@ -375,6 +375,41 @@ export const onTripCompleted = onDocumentUpdated(
   }
 )
 
+// Función para calcular comisión al finalizar viaje
+export const calculateCommissionOnCompletion = onDocumentUpdated(
+  'rides/{rideId}',
+  async (event) => {
+    const before = event.data?.before?.data()
+    const after = event.data?.after?.data()
+
+    if (!before || !after) return
+    if (before.estado === after.estado) return
+    if (after.estado !== 'finalizado') return
+    if (!after.driverUid) return
+
+    const fareAmount =
+      typeof after.montoFinal === 'number'
+        ? after.montoFinal
+        : typeof after.tarifaEstimada?.estimadoMax === 'number'
+          ? after.tarifaEstimada.estimadoMax
+          : typeof after.tarifaEstimada === 'number'
+            ? after.tarifaEstimada
+            : null
+
+    if (fareAmount == null) return
+
+    const commissionRate = 0.15
+    const commission = Number((fareAmount * commissionRate).toFixed(2))
+
+    const driverRef = db.collection('drivers').doc(after.driverUid)
+    await driverRef.update({
+      saldoPendiente: admin.firestore.FieldValue.increment(commission),
+      ultimoCobroAt: admin.firestore.FieldValue.serverTimestamp(),
+      ultimoCobroMonto: commission,
+    })
+  }
+)
+
 // Función auxiliar para calcular distancia entre dos puntos (en kilómetros)
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371; // Radio de la Tierra en km

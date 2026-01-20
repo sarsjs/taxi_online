@@ -12,7 +12,6 @@ import {
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../hooks/useAuth'
-import AuthOptions from '../components/AuthOptions'
 import MapView from '../components/MapView'
 import RouteSelector from '../components/RouteSelector'
 import LandmarkSelector from '../components/LandmarkSelector'
@@ -41,6 +40,7 @@ function Passenger() {
   const [duracionRuta, setDuracionRuta] = useState(null)
   const [originLat, setOriginLat] = useState('')
   const [originLng, setOriginLng] = useState('')
+  const [destinationError, setDestinationError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [searchError, setSearchError] = useState('')
@@ -122,19 +122,24 @@ function Passenger() {
     if (!user) return
     setLocationError('')
     setScheduleError('')
+    setDestinationError('')
 
     if (isScheduled && !scheduledAt) {
       setScheduleError('Selecciona fecha y hora para agendar.')
       return
     }
 
+    const latValue = Number.parseFloat(destLat)
+    const lngValue = Number.parseFloat(destLng)
+    const hasDestination = Number.isFinite(latValue) && Number.isFinite(lngValue)
+    if (!hasDestination) {
+      setDestinationError('Selecciona un destino antes de solicitar el taxi.')
+      return
+    }
+
     const createRide = async (origin) => {
-      const latValue = Number.parseFloat(destLat)
-      const lngValue = Number.parseFloat(destLng)
       const destination =
-        Number.isFinite(latValue) && Number.isFinite(lngValue)
-          ? new GeoPoint(latValue, lngValue)
-          : null
+        hasDestination ? new GeoPoint(latValue, lngValue) : null
       const scheduledTimestamp = isScheduled
         ? Timestamp.fromDate(new Date(scheduledAt))
         : null
@@ -159,6 +164,7 @@ function Passenger() {
       setDestAddress('')
       setSearchQuery('')
       setSearchResults([])
+      setDestinationError('')
       setOriginLat('')
       setOriginLng('')
       setOriginSearchQuery('')
@@ -219,6 +225,7 @@ function Passenger() {
         nombreCompleto: fullName.trim(),
         fotoUrl: photoUrl || null,
         telefono: user.phoneNumber || '',
+        rol: 'pasajero',
         updatedAt: serverTimestamp(),
       },
       { merge: true },
@@ -264,6 +271,7 @@ function Passenger() {
     setDestLat(lat.toFixed(6))
     setDestLng(lng.toFixed(6))
     setDestAddress(label || '')
+    setDestinationError('')
   }
 
   const pickDestinationFromMap = (latlng) => {
@@ -340,11 +348,12 @@ function Passenger() {
       : null
   const mapOrigin = rideData?.origen || draftOrigin
   const mapDestination = rideData?.destino || draftDestination
+  const hasDestination = Boolean(destLat && destLng)
+  const quickFare =
+    distanciaRuta && duracionRuta ? calcularTarifa(distanciaRuta, duracionRuta) : null
 
   return (
     <div className="screen">
-      {!user && <AuthOptions recaptchaId="recaptcha-passenger" />}
-
       {user && (
         <>
           <div className="map-hero">
@@ -354,6 +363,15 @@ function Passenger() {
               driverLocation={driverData?.ubicacion || null}
               showAvailableTaxis={!rideData || rideData.estado !== 'aceptado'}
             />
+            <div className="map-search-card">
+              <span aria-hidden="true">🔍</span>
+              <input
+                type="text"
+                readOnly
+                value={destAddress || ''}
+                placeholder="¿A dónde vamos?"
+              />
+            </div>
             <section className="card map-overlay">
               <h3 className="section-title">Estado del viaje</h3>
               {!rideData && <p className="muted">Listo para pedir un taxi.</p>}
@@ -399,6 +417,24 @@ function Passenger() {
                 passengerLocation={mapOrigin}
               />
             )}
+            <div className="map-bottom-sheet">
+              <div className="sheet-handle" />
+              <div className="sheet-info">
+                <h3>Taxi Estándar</h3>
+                <div className="price-tag">
+                  {quickFare
+                    ? `$${quickFare.estimadoMin}-${quickFare.estimadoMax}`
+                    : '$0.00'}
+                </div>
+              </div>
+              <button
+                className="button"
+                onClick={requestRide}
+                disabled={!canRequestRide || (isScheduled && !scheduledAt) || !hasDestination}
+              >
+                Solicitar ahora
+              </button>
+            </div>
           </div>
 
           <section className="card panel">
@@ -504,6 +540,7 @@ function Passenger() {
                   setDestLat(route.destination.latitude.toString());
                   setDestLng(route.destination.longitude.toString());
                   setDestAddress(route.destinationText || '');
+                  setDestinationError('');
                 }
                 // Capturar distancia y duración si están disponibles en la ruta
                 if (route.distancia) {
@@ -525,6 +562,7 @@ function Passenger() {
                 setDestLat(landmark.location.latitude.toString());
                 setDestLng(landmark.location.longitude.toString());
                 setDestAddress(landmark.name + ' - ' + landmark.description);
+                setDestinationError('');
               }}
               type="destination"
             />
@@ -572,6 +610,7 @@ function Passenger() {
               />
             </div>
             {destAddress && <p className="muted">Destino elegido: {destAddress}</p>}
+            {destinationError && <p className="muted">{destinationError}</p>}
             <button
               className="button"
               onClick={requestRide}
