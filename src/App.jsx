@@ -80,8 +80,10 @@ function App() {
         <div className="brand">
           <span className="brand-dot" />
           <div>
-            <p className="app-title">Taxi Local</p>
-            <p className="app-subtitle">Solicita o acepta viajes en tiempo real</p>
+            <p className="app-title">Taxi Online</p>
+            <p className="app-subtitle">
+              Plataforma local para pasajeros y taxistas
+            </p>
           </div>
         </div>
       </header>
