@@ -108,83 +108,45 @@ function Home() {
 
   if (!user) {
     return (
-      <section className="home-hero">
-        <div className="hero-content">
-          <span className="eyebrow">taxi_online</span>
-          <h1>Viaja seguro con Taxi Online</h1>
-          <p className="hero-description">
-            Solicita taxis confiables en tu poblado, sigue tu viaje en tiempo
-            real y mantente informado con notificaciones al instante.
-          </p>
-          <div className="hero-actions">
-            <span className="badge">Mapa en tiempo real</span>
-            <span className="badge">Reservas rápidas</span>
-            <span className="badge">Soporte local</span>
-          </div>
-          <div className="feature-grid">
-            <article className="feature-card">
-              <h3>Pasajeros informados</h3>
-              <p>
-                Rastrea el recorrido, recibe avisos y gestiona tu historial de
-                viajes desde un panel simple.
-              </p>
-            </article>
-            <article className="feature-card">
-              <h3>Conductores conectados</h3>
-              <p>
-                Acepta solicitudes cercanas, administra tus ganancias y mantén
-                tu estado en tiempo real.
-              </p>
-            </article>
-            <article className="feature-card">
-              <h3>Servicio confiable</h3>
-              <p>
-                Optimizado para móviles, con diseño moderno y controles claros
-                para todo tipo de usuario.
-              </p>
-            </article>
+      <section className="card hero-card">
+        <h1>Inicia sesion</h1>
+        <p className="muted">
+          Ingresa con tu cuenta. Si eres nuevo, selecciona tu rol despues de
+          iniciar sesion.
+        </p>
+        <div className="field" style={{ marginTop: '1.5rem' }}>
+          <label>Selecciona tu rol</label>
+          <div className="cta-row">
+            <label className="button outline role-option">
+              <input
+                type="radio"
+                name="role"
+                value="pasajero"
+                checked={selectedRole === 'pasajero'}
+                onChange={() => {
+                  setSelectedRole('pasajero')
+                  localStorage.setItem(ROLE_STORAGE_KEY, 'pasajero')
+                }}
+              />
+              Pasajero
+            </label>
+            <label className="button outline role-option">
+              <input
+                type="radio"
+                name="role"
+                value="taxista"
+                checked={selectedRole === 'taxista'}
+                onChange={() => {
+                  setSelectedRole('taxista')
+                  localStorage.setItem(ROLE_STORAGE_KEY, 'taxista')
+                }}
+              />
+              Taxista
+            </label>
           </div>
         </div>
-        <div className="card hero-panel">
-          <h2>Inicia sesión</h2>
-          <p className="muted">
-            Accede con tu cuenta y elige tu rol. Si eres nuevo, selecciona tu
-            perfil antes de continuar.
-          </p>
-          <div className="field" style={{ marginTop: '1.5rem' }}>
-            <label>Selecciona tu rol</label>
-            <div className="cta-row">
-              <label className="button outline role-option">
-                <input
-                  type="radio"
-                  name="role"
-                  value="pasajero"
-                  checked={selectedRole === 'pasajero'}
-                  onChange={() => {
-                    setSelectedRole('pasajero')
-                    localStorage.setItem(ROLE_STORAGE_KEY, 'pasajero')
-                  }}
-                />
-                Pasajero
-              </label>
-              <label className="button outline role-option">
-                <input
-                  type="radio"
-                  name="role"
-                  value="taxista"
-                  checked={selectedRole === 'taxista'}
-                  onChange={() => {
-                    setSelectedRole('taxista')
-                    localStorage.setItem(ROLE_STORAGE_KEY, 'taxista')
-                  }}
-                />
-                Taxista
-              </label>
-            </div>
-          </div>
-          <div style={{ marginTop: '2rem' }}>
-            <AuthOptions recaptchaId="recaptcha-main" />
-          </div>
+        <div style={{ marginTop: '2rem' }}>
+          <AuthOptions recaptchaId="recaptcha-main" />
         </div>
       </section>
     )
